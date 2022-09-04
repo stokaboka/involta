@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
 
-  postgres:
+  involta_postgres:
     container_name: postgres
     image: postgres:latest
     restart: always
@@ -15,9 +15,9 @@ services:
     volumes:
       - /var/lib/postgresql/data:/var/lib/postgresql/data
 
-  pgadmin:
+  involta_pgadmin:
     links:
-      - postgres:postgres
+      - involta_postgres
     container_name: pgadmin
     image: dpage/pgadmin4
     ports:
