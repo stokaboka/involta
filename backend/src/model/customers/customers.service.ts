@@ -1,51 +1,74 @@
-import {Injectable} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Either, left, right} from '@sweet-monads/either';
-import {CustomersEntity} from "./customers.entity";
-import {Repository} from "typeorm";
-import {Customer} from "./customer.interface";
-import {BadRequestError} from "../bad-request-error";
-import {NotFoundError} from "../not-found-error";
+import { Injectable } from '@nestjs/common';
+import { Either, left, right } from '@sweet-monads/either';
+import { RepositoryService } from '../../infrastructure/repository/repository.service';
+import { Customer } from '@prisma/client';
 
 @Injectable()
 export class CustomersService {
-    constructor(
-        @InjectRepository(CustomersEntity)
-        private repository: Repository<CustomersEntity>
-    ) {
-    }
+  constructor(private repositoryService: RepositoryService) {}
 
-    async getAll(): Promise<CustomersEntity[]> {
-        return await this.repository.find();
-    }
+  get repository() {
+    return this.repositoryService.customer;
+  }
 
-    async getById(id: number): Promise<CustomersEntity> {
-        return await this.repository.findOneBy({id});
-    }
+  async getAll(): Promise<Customer[]> {
+    return await this.repository.findMany();
+  }
 
-    async countAll(): Promise<number> {
-        return await this.repository.count();
-    }
+  async getById(id: number): Promise<Customer> {
+    return await this.repository.findUnique({
+      where: { id: Number(id) },
+    });
+  }
 
-    async save(customer: Customer): Promise<Either<Error, CustomersEntity>> {
-        try {
-            const result = await this.repository.save(customer);
-            return right<Error, CustomersEntity>(result);
-        } catch (e) {
-            return left<Error, CustomersEntity>(new BadRequestError(e));
-        }
-    }
+  async countAll(): Promise<number> {
+    return await this.repository.count();
+  }
 
-    async remove(id: number): Promise<Either<Error, number>> {
-        try {
-            const result = await this.repository.delete({id});
-            if (result.affected) {
-                return right(id);
-            } else {
-                return left<Error, number>(new NotFoundError(new Error('Not Found')));
-            }
-        } catch (e) {
-            return left<Error, number>(new BadRequestError(e));
-        }
+  async create(customer: Customer): Promise<Either<Error, Customer>> {
+    try {
+      const result = await this.repository.create({
+        data: customer,
+      });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
     }
+  }
+
+  async update(customer: Customer): Promise<Either<Error, Customer>> {
+    try {
+      const result = await this.repository.update({
+        where: { id: Number(customer.id) },
+        data: customer,
+      });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
+  }
+
+  async save(customer: Customer): Promise<Either<Error, Customer>> {
+    try {
+      const result = await this.repository.upsert({
+        where: { id: Number(customer.id) },
+        update: customer,
+        create: customer,
+      });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
+  }
+
+  async remove(customer: Customer): Promise<Either<Error, Customer>> {
+    try {
+      const result = await this.repository.delete({
+        where: { id: Number(customer.id) },
+      });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
+  }
 }
