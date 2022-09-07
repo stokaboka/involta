@@ -16,13 +16,19 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Get()
-  find(@Query() params): Promise<Customer[]> {
-    return this.customersService.getAll();
+  async find(@Query() params): Promise<Customer[]> {
+    const customer = params as Customer;
+    const result = await this.customersService.getAll(customer);
+    if (result.isRight()) {
+      return result.value;
+    } else {
+      throw result.value;
+    }
   }
 
   @Post()
   async create(@Body() customer: Customer): Promise<Customer> {
-    const result: Either<Error, Customer> = await this.customersService.save(
+    const result = await this.customersService.create(
       customer,
     );
     if (result.isRight()) {
@@ -34,7 +40,7 @@ export class CustomersController {
 
   @Put()
   async update(@Body() customer: Customer): Promise<Customer> {
-    const result: Either<Error, Customer> = await this.customersService.save(
+    const result = await this.customersService.update(
       customer,
     );
     if (result.isRight()) {
@@ -46,9 +52,7 @@ export class CustomersController {
 
   @Delete()
   async delete(@Body() customer: Customer): Promise<Customer> {
-    const result: Either<Error, Customer> = await this.customersService.remove(
-      customer,
-    );
+    const result = await this.customersService.remove(customer);
     if (result.isRight()) {
       return result.value;
     } else {
