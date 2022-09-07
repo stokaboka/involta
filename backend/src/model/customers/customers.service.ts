@@ -11,18 +11,33 @@ export class CustomersService {
     return this.repositoryService.customer;
   }
 
-  async getAll(): Promise<Customer[]> {
-    return await this.repository.findMany();
+  async getAll(customer: Customer): Promise<Either<Error, Customer[]>> {
+    try {
+      const result = await this.repository.findMany({ where: customer });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
   }
 
-  async getById(id: number): Promise<Customer> {
-    return await this.repository.findUnique({
-      where: { id: Number(id) },
-    });
+  async getById(id: number): Promise<Either<Error, Customer>> {
+    try {
+      const result = await this.repository.findUnique({
+        where: { id: Number(id) },
+      });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
   }
 
-  async countAll(): Promise<number> {
-    return await this.repository.count();
+  async countAll(customer: Customer): Promise<Either<Error, number>> {
+    try {
+      const result = await this.repository.count({ where: customer });
+      return right(result);
+    } catch (error) {
+      return left(this.repositoryService.getProcessedError(error));
+    }
   }
 
   async create(customer: Customer): Promise<Either<Error, Customer>> {
