@@ -10,26 +10,27 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Server } from 'socket.io';
 import { LocksService } from '../../locks/locks.service';
 import { LockInfo } from '../../locks/lock-info';
+import { LockEvent } from './lock-event.interface';
 
 @WebSocketGateway({
   cors: {
     origin: '*',
   },
 })
-export class LocksGateway implements OnGatewayConnection, OnGatewayDisconnect{
+export class LocksGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   constructor(private readonly locksService: LocksService) {}
 
   @SubscribeMessage('lock')
-  lock(@MessageBody() data: any): boolean {
+  lock(@MessageBody() data: LockEvent): boolean {
     const { user, table, recordId } = data;
     return this.locksService.lock(user, table, recordId);
   }
 
   @SubscribeMessage('unlock')
-  unlock(@MessageBody() data: any): boolean {
+  unlock(@MessageBody() data: LockEvent): boolean {
     const { user, table, recordId } = data;
     return this.locksService.unlock(user, table, recordId);
   }
