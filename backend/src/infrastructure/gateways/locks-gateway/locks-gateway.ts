@@ -1,5 +1,7 @@
 import {
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -14,7 +16,7 @@ import { LockInfo } from '../../locks/lock-info';
     origin: '*',
   },
 })
-export class LocksGateway {
+export class LocksGateway implements OnGatewayConnection, OnGatewayDisconnect{
   @WebSocketServer()
   server: Server;
 
@@ -40,5 +42,15 @@ export class LocksGateway {
   @OnEvent('unlocked')
   onUnLocked(payload: LockInfo) {
     this.server.emit('unlocked', payload);
+  }
+
+  handleConnection(client: any, ...args: any[]): any {
+    console.log('handleConnection', client, args);
+    return {};
+  }
+
+  handleDisconnect(client: any): any {
+    console.log('handleDisconnect', client);
+    return {};
   }
 }
