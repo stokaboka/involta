@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { LockInfo } from './lock-info';
 import { Lock } from './lock';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class LocksService {
@@ -12,6 +13,8 @@ export class LocksService {
   private lockLiveTime = 5 * 60 * 1000;
   // 5 seconds
   private outdatedLocksCollectionInterval = 5 * 1000;
+
+  constructor(private eventEmitter: EventEmitter2) {}
 
   public start(): void {
     this.timerId = setInterval(
@@ -29,11 +32,10 @@ export class LocksService {
   public lock(user: string, table: string, recordId: number): boolean {
     const lock = new Lock(table, recordId);
     if (!this.isLocked(lock)) {
+      const lockInfo = new LockInfo(user, lock);
       this.locks.add(lock);
-      this.locksInfo.set(
-        LockInfo.getLockInfoId(user, lock),
-        new LockInfo(user, lock),
-      );
+      this.locksInfo.set(lockInfo.id, lockInfo);
+      this.eventEmitter.emit('locked', lockInfo);
       return true;
     }
     return false;
@@ -42,9 +44,10 @@ export class LocksService {
   public unlock(user: string, table: string, recordId: number): boolean {
     const lock = new Lock(table, recordId);
     if (this.locks.delete(lock)) {
-      this.locksInfo.delete(LockInfo.getLockInfoId(user, lock));
+      const lockInfo = new LockInfo(user, lock);
+      this.locksInfo.delete(lockInfo.id);
+      this.eventEmitter.emit('unlocked', lockInfo);
     }
-
     return true;
   }
 
